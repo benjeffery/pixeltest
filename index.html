@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <script type="application/javascript" src="https://code.jquery.com/jquery-3.1.0.js" ></script>
+    <style>
+        canvas,
+        img {
+            border: 5px solid #ddd;
+            width: 256px;
+            height: 256px;
+        }
+
+        .name {
+            position: absolute;
+            left: 40px;
+            top: 40px;
+            color: rgb(255, 255, 255);
+            font-size: 20px;
+            text-shadow: rgb(71, 71, 71) 1px 2px 1px;
+        }
+
+        .test {
+            position: relative;
+            display: inline-block;
+        }
+
+        .stretchcss {
+            image-rendering: optimizeSpeed;
+            image-rendering: -moz-crisp-edges;
+            image-rendering: crisp-edges;
+            image-rendering: -webkit-optimize-contrast;
+            image-rendering: optimize-contrast;
+            -ms-interpolation-mode: nearest-neighbor;
+            image-rendering: pixelated;
+        }
+
+    </style>
+</head>
+<body>
+<div class="test">
+    <div class="name">
+        CSS Stretch
+    </div>
+    <canvas class='stretch' width='32' height='32'></canvas>
+</div>
+<div class="test">
+    <div class="name">
+        CSS Stretch + image-rendering
+    </div>
+    <canvas class='stretch stretchcss' width='32' height='32'></canvas>
+</div>
+<div class="test">
+    <div class="name">
+        Scale
+    </div>
+    <canvas class="scale" id='scale' width='256' height='256'></canvas>
+</div>
+<div class="test">
+    <div class="name">
+        Scale /w imageSmoothingEnabled = false
+    </div>
+    <canvas class="scale" id='scaleNoSmooth' width='256' height='256'></canvas>
+</div>
+<div class="test">
+    <div class="name">
+        Img set by dataURL
+    </div>
+    <img class="stretch"/>
+</div>
+<div class="test">
+    <div class="name">
+        Img set by dataURL /w image-rendering
+    </div>
+    <img class="stretchcss"/>
+</div>
+<script type="application/javascript">
+    var img = new Image();
+    img.src = 'pixels.png';
+    img.onload = function() {
+        $('canvas.stretch').each(function() {
+            var ctx = this.getContext("2d");
+            ctx.drawImage(img, 32, 0, 32, 32, 0, 0, 32, 32);
+        });
+        $('canvas#scale').each(function() {
+            var ctx = this.getContext("2d");
+            ctx.drawImage(img, 32, 0, 32, 32, 0, 0, 256, 256);
+        });
+        $('canvas#scaleNoSmooth').each(function() {
+            var ctx = this.getContext("2d");
+            ctx.mozImageSmoothingEnabled = false;
+            ctx.webkitImageSmoothingEnabled = false;
+            ctx.msImageSmoothingEnabled = false;
+            ctx.imageSmoothingEnabled = false;
+            ctx.drawImage(img, 32, 0, 32, 32, 0, 0, 256, 256);
+        });
+        var offscreenCanvas = document.createElement('canvas');
+        offscreenCanvas.width = 32;
+        offscreenCanvas.height = 32;
+        var ctx = offscreenCanvas.getContext("2d");
+        ctx.drawImage(img, 32, 0, 32, 32, 0, 0, 32, 32);
+        console.log(offscreenCanvas.toDataURL());
+        $('img').attr("src", offscreenCanvas.toDataURL());
+    };
+
+
+
+</script>
+</body>
+</html>
