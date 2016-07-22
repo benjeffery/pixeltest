@@ -3,7 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <title>Title</title>
-    <script type="application/javascript" src="https://code.jquery.com/jquery-3.1.0.js" ></script>
+    <script type="application/javascript" src="https://code.jquery.com/jquery-3.1.0.js"></script>
+    <script type="application/javascript" src="is-style-supported.js"></script>
+    <script type="application/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.13.1/lodash.js"></script>
+
     <style>
         canvas,
         img {
@@ -32,66 +35,67 @@
             image-rendering: crisp-edges;
             image-rendering: -webkit-optimize-contrast;
             image-rendering: optimize-contrast;
-            -ms-interpolation-mode: nearest-neighbor;
             image-rendering: pixelated;
         }
 
     </style>
 </head>
 <body>
-<div class="test">
-    <div class="name">
-        CSS Stretch
-    </div>
-    <canvas class='stretch' width='32' height='32'></canvas>
-</div>
+<!--<div class="test">-->
+<!--<div class="name">-->
+<!--CSS Stretch-->
+<!--</div>-->
+<!--<canvas class='stretch' width='32' height='32'></canvas>-->
+<!--</div>-->
 <div class="test">
     <div class="name">
         CSS Stretch + image-rendering
     </div>
     <canvas class='stretch stretchcss' width='32' height='32'></canvas>
 </div>
-<div class="test">
-    <div class="name">
-        Scale
-    </div>
-    <canvas class="scale" id='scale' width='256' height='256'></canvas>
-</div>
+<!--<div class="test">-->
+<!--<div class="name">-->
+<!--Scale-->
+<!--</div>-->
+<!--<canvas class="scale" id='scale' width='256' height='256'></canvas>-->
+<!--</div>-->
 <div class="test">
     <div class="name">
         Scale /w imageSmoothingEnabled = false
     </div>
     <canvas class="scale" id='scaleNoSmooth' width='256' height='256'></canvas>
 </div>
-<div class="test">
-    <div class="name">
-        Img set by dataURL
-    </div>
-    <img class="stretch"/>
-</div>
-<div class="test">
-    <div class="name">
-        Img set by dataURL /w image-rendering
-    </div>
-    <img class="stretchcss"/>
-</div>
+<!--<div class="test">-->
+<!--<div class="name">-->
+<!--Img set by dataURL-->
+<!--</div>-->
+<!--<img class="stretch"/>-->
+<!--</div>-->
+<!--<div class="test">-->
+<!--<div class="name">-->
+<!--Img set by dataURL /w image-rendering-->
+<!--</div>-->
+<!--<img class="stretchcss"/>-->
+<!--</div>-->
+<div id="result"></div>
 <script type="application/javascript">
     var img = new Image();
     img.src = 'pixels.png';
-    img.onload = function() {
-        $('canvas.stretch').each(function() {
+    img.onload = function () {
+        $('canvas.stretch').each(function () {
             var ctx = this.getContext("2d");
             ctx.drawImage(img, 32, 0, 32, 32, 0, 0, 32, 32);
         });
-        $('canvas#scale').each(function() {
+        $('canvas#scale').each(function () {
             var ctx = this.getContext("2d");
             ctx.drawImage(img, 32, 0, 32, 32, 0, 0, 256, 256);
         });
-        $('canvas#scaleNoSmooth').each(function() {
+        $('canvas#scaleNoSmooth').each(function () {
             var ctx = this.getContext("2d");
             ctx.mozImageSmoothingEnabled = false;
             ctx.webkitImageSmoothingEnabled = false;
             ctx.msImageSmoothingEnabled = false;
+            ctx.oImageSmoothingEnabled = false;
             ctx.imageSmoothingEnabled = false;
             ctx.drawImage(img, 32, 0, 32, 32, 0, 0, 256, 256);
         });
@@ -100,12 +104,66 @@
         offscreenCanvas.height = 32;
         var ctx = offscreenCanvas.getContext("2d");
         ctx.drawImage(img, 32, 0, 32, 32, 0, 0, 32, 32);
-        console.log(offscreenCanvas.toDataURL());
         $('img').attr("src", offscreenCanvas.toDataURL());
     };
+    var canvas = document.createElement('canvas');
+    var ctx = canvas.getContext("2d");
+    var cssValues = ['benny',
+        //'optimize-speed', DON'T USE THIS AS IT IS UNRELIABLE
+     '-moz-crisp-edges',
+     'crisp-edges',
+     '-webkit-optimize-contrast',
+     'optimize-contrast',
+     'pixelated'];
+    var jsValues = [
+        'mozImageSmoothingEnabled',
+        'webkitImageSmoothingEnabled',
+        'msImageSmoothingEnabled',
+        'imageSmoothingEnabled'
+    ];
+    var result = 'css:';
+    for (var i=0 ; i < cssValues.length; i++) {
+        result += Modernizr.testProp('imageRendering', cssValues[i]) ? cssValues[i]+ ', ' : ''
+    }
+    result += '<br>js:';
+    result +=
+                    ('mozImageSmoothingEnabled' in ctx ? 'mozImageSmoothingEnabled, ' : '') +
+                    ('webkitImageSmoothingEnabled' in ctx ? 'webkitImageSmoothingEnabled, ' : '') +
+                    ('msImageSmoothingEnabled' in ctx ? 'msImageSmoothingEnabled, ' : '') +
+                    ('imageSmoothingEnabled' in ctx ? 'imageSmoothingEnabled, ' : '')
+            ;
+    $('#result').html(result);
 
+    var css = [];
+    for (var i=0 ; i < cssValues.length; i++) {
+        if (Modernizr.testProp('imageRendering', cssValues[i])) {
+            css.push(cssValues[i]);
+        }
+    }
+    var js = [];
+    for (var i=0 ; i < jsValues.length; i++) {
+        if (jsValues[i] in ctx) {
+            js.push(cssValues[i]);
+        }
+    }
+
+    function chooseMode(js, css) {
+        if (js.length == 0 && css.length == 0)  // IE <10, other early browser
+            return 'warn';
+
+
+
+    }
 
 
 </script>
 </body>
 </html>
+
+if no css but js use js
+if only -webkit-optimize-contrast but js then use js  //Android
+if only -webkit-optimize-contrast but no js then use css  //Safari 6
+if -moz-crisp-edges || crisp-edges || pixelated use css //Chrome, FF
+if optimiseSpeed and no js WARN use CSS //Early safari fail, opera css works
+if -webkit-optimize-contrast and optimiseSpeed then css
+
