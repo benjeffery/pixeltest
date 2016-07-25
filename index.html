@@ -4,15 +4,16 @@
     <meta charset="UTF-8">
     <title>Title</title>
     <script type="application/javascript" src="https://code.jquery.com/jquery-3.1.0.js"></script>
-    <script type="application/javascript" src="is-style-supported.js"></script>
+    <script type="application/javascript" src="modernizr.js"></script>
+    <script type="application/javascript" src="bowser.js"></script>
     <script type="application/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.13.1/lodash.js"></script>
 
     <style>
         canvas,
         img {
             border: 5px solid #ddd;
-            width: 256px;
-            height: 256px;
+            /*width: 256px;*/
+            /*height: 256px;*/
         }
 
         .name {
@@ -30,6 +31,8 @@
         }
 
         .stretchcss {
+            border: 1px solid #ddd;
+            transform: translate(128px, -120px) scale(8);
             image-rendering: optimizeSpeed;
             image-rendering: -moz-crisp-edges;
             image-rendering: crisp-edges;
@@ -43,18 +46,6 @@
 <body>
 <!--<div class="test">-->
 <!--<div class="name">-->
-<!--CSS Stretch-->
-<!--</div>-->
-<!--<canvas class='stretch' width='32' height='32'></canvas>-->
-<!--</div>-->
-<div class="test">
-    <div class="name">
-        CSS Stretch + image-rendering
-    </div>
-    <canvas class='stretch stretchcss' width='32' height='32'></canvas>
-</div>
-<!--<div class="test">-->
-<!--<div class="name">-->
 <!--Scale-->
 <!--</div>-->
 <!--<canvas class="scale" id='scale' width='256' height='256'></canvas>-->
@@ -64,6 +55,18 @@
         Scale /w imageSmoothingEnabled = false
     </div>
     <canvas class="scale" id='scaleNoSmooth' width='256' height='256'></canvas>
+</div>
+<!--<div class="test">-->
+<!--<div class="name">-->
+<!--CSS Stretch-->
+<!--</div>-->
+<!--<canvas class='stretch' width='32' height='32'></canvas>-->
+<!--</div>-->
+<div class="test">
+    <div class="name">
+        CSS Stretch + image-rendering
+    </div>
+    <canvas class='stretch stretchcss' width='32' height='32'></canvas>
 </div>
 <!--<div class="test">-->
 <!--<div class="name">-->
@@ -132,38 +135,50 @@
                     ('msImageSmoothingEnabled' in ctx ? 'msImageSmoothingEnabled, ' : '') +
                     ('imageSmoothingEnabled' in ctx ? 'imageSmoothingEnabled, ' : '')
             ;
-    $('#result').html(result);
 
-    var css = [];
+    var cssProps = [];
     for (var i=0 ; i < cssValues.length; i++) {
         if (Modernizr.testProp('imageRendering', cssValues[i])) {
-            css.push(cssValues[i]);
+            cssProps.push(cssValues[i]);
         }
     }
-    var js = [];
+    var jsProps = [];
     for (var i=0 ; i < jsValues.length; i++) {
         if (jsValues[i] in ctx) {
-            js.push(cssValues[i]);
+            jsProps.push(cssValues[i]);
         }
     }
 
-    function chooseMode(js, css) {
-        if (js.length == 0 && css.length == 0)  // IE <10, other early browser
-            return 'warn';
-
-
-
+    function chooseMode(jsProps, cssProps) {
+        if (cssProps.length == 0 && jsProps.length == 0)  // IE <10, other early browser, no method works there. In Opera and android > 4.1.2 CSS works though
+            return bowser.opera || (bowser.android && bowser.osversion >= '4.1.2') ? 'css' : 'warning';
+        if (cssProps.length == 0 && jsProps.length > 0)  // IE >10 even EDGE... sigh
+            return 'js';
+        if (cssProps.length == 1 && cssProps[0] == 'optimiseSpeed' && jsProps.length == 0) //A few earlier browsers report this prop, but it only works for images
+            return 'warning';
+        if (_.includes(cssProps, '-webkit-optimize-contrast') || _.includes(cssProps, '-moz-crisp-edges') || _.includes(cssProps, 'crisp-edges') || _.includes(cssProps, 'pixelated')) {
+            if (!bowser.check({chrome: "41"})) //Earlier chromes only support css on IMG
+                return 'js';
+            return 'css';
+        }
+        return 'warning';
     }
 
+    var mode = chooseMode(jsProps, cssProps);
+    result += '<br>'+mode;
+    result += '<br>' + JSON.stringify(bowser);
+
+
+    $('#result').html(result);
 
 </script>
 </body>
 </html>
 
-if no css but js use js
-if only -webkit-optimize-contrast but js then use js  //Android
-if only -webkit-optimize-contrast but no js then use css  //Safari 6
-if -moz-crisp-edges || crisp-edges || pixelated use css //Chrome, FF
-if optimiseSpeed and no js WARN use CSS //Early safari fail, opera css works
-if -webkit-optimize-contrast and optimiseSpeed then css
+ <!--if no css but js use js-->
+ <!--if only -webkit-optimize-contrast but js then use js  //Android-->
+ <!--if only -webkit-optimize-contrast but no js then use css  //Safari 6-->
+<!--if -moz-crisp-edges || crisp-edges || pixelated use css //Chrome, FF-->
+ <!--if optimiseSpeed and no js WARN use CSS //Early safari fail, opera css works-->
+<!--if -webkit-optimize-contrast and optimiseSpeed then css-->
 
